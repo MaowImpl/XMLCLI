@@ -26,8 +26,8 @@ public class TextInstruction extends AbstractInstruction {
                         break;
                     }
                     case "append": {
-                        final String originalText = active.getText();
-                        active.setText(originalText + text);
+                        final String original = active.getText();
+                        active.setText(original + text);
                         break;
                     }
                     case "remove": {
@@ -52,11 +52,7 @@ public class TextInstruction extends AbstractInstruction {
                         break;
                     }
                     case "comma": {
-                        String originalText = active.getText();
-                        if (originalText.startsWith(",")) {
-                            originalText = originalText.substring(1);
-                        }
-                        active.setText(originalText + text);
+                        final String original = active.getText();
                         break;
                     }
                 }

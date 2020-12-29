@@ -28,5 +28,6 @@ public final class InstructionFactory {
         addInstruction("text", TextInstruction::new);
         addInstruction("select", SelectInstruction::new);
         addInstruction("print", PrintInstruction::new);
+        addInstruction("call", CallInstruction::new);
     }
 }

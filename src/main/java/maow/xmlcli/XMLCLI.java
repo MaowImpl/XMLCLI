@@ -2,8 +2,11 @@ package maow.xmlcli;
 
 import maow.mayan.lang.StringUtils;
 import maow.xmlcli.command.Command;
+import maow.xmlcli.command.Description;
+import maow.xmlcli.command.HelpCommand;
 import maow.xmlcli.command.instruction.Instruction;
 import maow.xmlcli.command.instruction.InstructionFactory;
+import maow.xmlcli.util.ConvertUtils;
 import maow.xmlcli.util.IOUtils;
 import org.dom4j.*;
 import org.jline.reader.EndOfFileException;
@@ -47,40 +50,56 @@ public final class XMLCLI {
     }
 
     private static void initCommands() {
-        final Path configPath = Paths.get("commands.xml");
-        final Optional<Document> optional = IOUtils.readXmlDocument(configPath);
+        final Optional<Document> optional = IOUtils.readXmlDocument(Paths.get("commands.xml"));
         if (optional.isPresent()) {
             final Document config = optional.get();
             final List<Command> commands = getCommands(config);
-            commands.forEach(command -> {
-                System.out.println("Loaded command: " + command.getName());
-                COMMANDS.put(command.getName(), command);
-            });
+            COMMANDS.put("help", new HelpCommand());
+            commands
+                    .stream()
+                    .filter(command -> !command.getName().equals("help"))
+                    .forEach(command -> COMMANDS.put(command.getName(), command));
         }
     }
 
-    private static List<Command> getCommands(Document config) {
+    public static List<Command> getCommands(Document config) {
         return getChildren(config.getRootElement(), "commands", "command")
                 .stream()
                 .map(XMLCLI::getCommand)
                 .collect(Collectors.toList());
     }
 
-    private static Command getCommand(Element element) {
+    public static Command getCommand(Element element) {
         final String name = getAttribute(element, "name");
-        final int args = getAttribute(Integer.class, element, "args");
+        final String argsString = getAttribute(element, "args");
+        int args = 0;
+        if (argsString != null) {
+            args = ConvertUtils.convert(Integer.class, argsString);
+        }
         final List<Instruction> instructions = getInstructions(element);
-        return new Command(name, args, instructions);
+        final Description description = getDescription(element);
+        final String parentID = getAttribute(element, "extends");
+        return new Command(name, args, instructions, description, parentID);
     }
 
-    private static List<Instruction> getInstructions(Element element) {
+    public static Description getDescription(Element element) {
+        final Element description = element.element("Description");
+        if (description != null) {
+            final String usage = getAttribute(description, "usage");
+            final String text = getText(description, true);
+            return new Description(usage, text);
+        }
+        return Description.empty();
+    }
+
+    public static List<Instruction> getInstructions(Element element) {
         return getChildren(element, "command", "instruction")
                 .stream()
                 .map(XMLCLI::getInstruction)
                 .collect(Collectors.toList());
     }
 
-    private static Instruction getInstruction(Element element) {
+    public static Instruction getInstruction(Element element) {
         final String type = getAttribute(element, "type");
         final String value = getAttribute(element, "value");
         final String text = getText(element, false);
@@ -123,28 +142,40 @@ public final class XMLCLI {
         final List<String> args = getArgs(input);
         final Command command = COMMANDS.get(name);
         if (command != null) {
-            if (args.size() >= command.getArgs()) {
-                executeCommand(command, args);
-                return;
-            }
-            System.out.println("Incorrect number of args, requested " + command.getArgs() + " for command \"" + command.getName() + "\"");
+            executeCommand(command, args);
             return;
         }
         System.out.println("Invalid command: " + name);
     }
 
-    private static List<String> getArgs(String input) {
+    public static List<String> getArgs(String input) {
         final List<String> args = StringUtils.separateArgs(input);
         args.remove(0);
         return args;
     }
 
-    private static void executeCommand(Command command, List<String> args) {
-        command.getInstructions().forEach(instruction -> instruction.execute(DOCUMENT, ACTIVE_ELEMENT, args));
-        IOUtils.writeXmlDocument(DOCUMENT, XML_PATH);
+    public static void executeCommand(Command command, List<String> args) {
+        if (args.size() >= command.getArgs()) {
+            final Command parent = COMMANDS.get(command.getParentID());
+            if (parent != null) {
+                executeCommand(parent, args);
+            }
+            command.getInstructions().forEach(instruction -> instruction.execute(DOCUMENT, ACTIVE_ELEMENT, args));
+            IOUtils.writeXmlDocument(DOCUMENT, XML_PATH);
+            return;
+        }
+        System.out.println("Incorrect number of args, requested " + command.getArgs() + " for command \"" + command.getName() + "\"");
     }
 
     public static void setActiveElement(Element activeElement) {
         ACTIVE_ELEMENT = activeElement;
+    }
+
+    public static Command getCommand(String name) {
+        return COMMANDS.get(name);
+    }
+
+    public static Collection<Command> getCommands() {
+        return COMMANDS.values();
     }
 }

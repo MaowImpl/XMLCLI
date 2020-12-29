@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -19,4 +20,8 @@ dependencies {
     implementation "org.jline:jline:3.18.0"
     implementation "org.fusesource.jansi:jansi:2.1.1"
     implementation "com.github.maowimpl:mayan:master-SNAPSHOT"
+}
+
+application {
+    mainClassName = "maow.xmlcli.XMLCLI"
 }
