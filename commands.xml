@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Commands>
+    <Command name="init" args="0">
+        <Instruction type="element" value="Computer"/>
+        <Instruction type="element" value="ports">true</Instruction>
+        <Instruction type="text" value="set">22</Instruction>
+        <Instruction type="select" value="$PARENT"/>
+        <Instruction type="element" value="portRemap">true</Instruction>
+        <Instruction type="text" value="set">22=2</Instruction>
+    </Command>
+    <Command name="port" args="2">
+        <Instruction type="select" value="$ROOT"/>
+        <Instruction type="select" value="ports"/>
+        <Instruction type="text" value="append">,$ARGS[1]</Instruction>
+        <Instruction type="select" value="$PARENT"/>
+        <Instruction type="select" value="portRemap"/>
+        <Instruction type="text" value="append">,$ARGS[1]=$ARGS[2]</Instruction>
+    </Command>
+    <Command name="test" args="0">
+        <Instruction type="select" value="$ROOT"/>
+        <Instruction type="select" value="ports"/>
+        <Instruction type="attribute" value="$REMOVE:attributeTest"/>
+    </Command>
+</Commands>
